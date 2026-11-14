@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College Placement Management System (CPMS) - DBMS Project</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/style.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: { 900: '#0f172a', 800: '#1e293b', 700: '#334155' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-indigo-600 selection:text-white">
+
+    <!-- Top Navigation Bar -->
+    <header class="glass-nav sticky top-0 z-40 px-4 lg:px-8 py-3.5 flex items-center justify-between">
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="App.restoreSession()">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-sky-500 flex items-center justify-center text-xl shadow-lg shadow-indigo-500/30">
+                🎓
+            </div>
+            <div>
+                <h1 class="text-base font-black tracking-tight text-white flex items-center gap-2">
+                    RVCE Placements <span class="text-xs px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 font-semibold font-mono">CPMS</span>
+                </h1>
+                <p class="text-[11px] text-slate-400">Database Management System • Lab & Viva Project</p>
+            </div>
+        </div>
+
+        <!-- Center: Database Connection Badge -->
+        <div class="hidden md:flex items-center space-x-2">
+            <div id="dbStatusBadge">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300">
+                    Checking database...
+                </span>
+            </div>
+        </div>
+
+        <!-- Right: Active User Pill / Quick Switch -->
+        <div class="flex items-center space-x-3">
+            <div id="activeUserBar" class="hidden flex items-center space-x-3 bg-slate-900/80 px-3 py-1.5 rounded-xl border border-slate-800">
+                <span id="activeUserIcon" class="text-lg">🎓</span>
+                <div class="text-left hidden sm:block">
+                    <p id="activeUserName" class="text-xs font-bold text-slate-100">User Name</p>
+                    <p id="activeUserRole" class="text-[10px] text-indigo-400 font-medium">Role Info</p>
+                </div>
+                <button onclick="document.getElementById('switchUserModal').classList.remove('hidden')" class="px-2.5 py-1 text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg transition border border-slate-700" title="Quick Switch Role">
+                    Switch ⇄
+                </button>
+                <button onclick="App.logout()" class="p-1.5 hover:text-rose-400 text-slate-400 transition" title="Logout">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+        <!-- =================================================================== -->
+        <!-- VIEW 1: AUTH / LOGIN SELECTION VIEW -->
+        <!-- =================================================================== -->
+        <section id="loginView" class="py-8 max-w-4xl mx-auto">
+            <div class="text-center mb-8">
+                <span class="px-3 py-1 rounded-full text-xs font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase tracking-widest">
+                    Multi-Role University Placement Portal
+                </span>
+                <h2 class="text-3xl sm:text-4xl font-black text-white mt-3 tracking-tight">
+                    Select Your Login Role
+                </h2>
+                <p class="text-sm text-slate-400 mt-2 max-w-lg mx-auto">
+                    Experience the complete campus recruitment ecosystem with dedicated portals for Students, Recruiting Companies, and University TPO Officers.
+                </p>
+            </div>
+
+            <!-- Role & Registration Navigation Tabs -->
+            <div class="glass-panel p-2 rounded-2xl flex flex-wrap max-w-3xl mx-auto mb-8 border border-slate-800 gap-1.5 justify-center">
+                <button onclick="setLoginRole('student')" id="tabBtnStudent" class="px-4 py-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 bg-indigo-600 text-white shadow-lg shadow-indigo-600/30">
+                    🎓 Student Login
+                </button>
+                <button onclick="setLoginRole('company')" id="tabBtnCompany" class="px-4 py-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 text-slate-400 hover:text-white">
+                    🏢 Company Login
+                </button>
+                <button onclick="setLoginRole('tpo')" id="tabBtnTpo" class="px-4 py-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 text-slate-400 hover:text-white">
+                    🏛️ University TPO
+                </button>
+                <span class="w-px h-6 bg-slate-800 my-auto hidden sm:block"></span>
+                <button onclick="setLoginRole('reg_student')" id="tabBtnRegStudent" class="px-4 py-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 text-emerald-400 hover:text-white hover:bg-emerald-600/20 border border-emerald-500/20">
+                    ➕ Register Student
+                </button>
+                <button onclick="setLoginRole('reg_company')" id="tabBtnRegCompany" class="px-4 py-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 text-amber-300 hover:text-white hover:bg-amber-600/20 border border-amber-500/20">
+                    ➕ Register Company
+                </button>
+            </div>
+
+            <!-- Role Forms Container -->
+            <div class="glass-panel rounded-3xl p-6 sm:p-8 border border-slate-800 shadow-2xl relative overflow-hidden">
+
+                <!-- 1. Student Login Form -->
+                <div id="loginFormStudent" class="login-pane">
+                    <div class="max-w-md mx-auto">
+                        <div class="text-center mb-6">
+                            <h3 class="text-lg font-bold text-white">Student Portal Access</h3>
+                            <p class="text-xs text-slate-400">Enter your University Seat Number (USN) or select a demo candidate</p>
+                        </div>
+
+                        <form id="studentLoginForm" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1.5">USN (University Seat Number) / Student ID</label>
+                                <input type="text" id="studentUsnInput" value="1RV21CS001" placeholder="e.g. 1RV21CS001" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1.5 flex justify-between">
+                                    <span>Student Password</span>
+                                    <span class="text-[10px] text-indigo-400 font-normal">Password = Student ID / USN</span>
+                                </label>
+                                <input type="password" id="studentPasswordInput" value="1RV21CS001" placeholder="Enter your USN or Student ID" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500 font-mono">
+                            </div>
+                            <div class="p-2.5 rounded-xl bg-indigo-950/40 border border-indigo-900/60 text-[11px] text-indigo-200 flex items-center gap-2">
+                                <span>🔑</span>
+                                <span><strong>Default Password:</strong> Your Student ID or USN (e.g. <code class="font-mono font-bold text-white">1RV21CS001</code>).</span>
+                            </div>
+                            <button type="submit" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider transition shadow-lg shadow-indigo-600/30">
+                                Sign In As Student →
+                            </button>
+                        </form>
+
+                        <div class="mt-4 text-center">
+                            <p class="text-xs text-slate-400">
+                                Don't have a placement profile? 
+                                <button type="button" onclick="setLoginRole('reg_student')" class="text-indigo-400 font-bold hover:underline ml-1">Register as New Student →</button>
+                            </p>
+                        </div>
+
+                        <div class="mt-6 pt-6 border-t border-slate-800">
+                            <p class="text-xs font-semibold text-slate-400 mb-2.5 flex items-center justify-between">
+                                <span>⚡ 1-Click Demo Profiles:</span>
+                                <span class="text-[10px] text-indigo-400">Quick Test Candidates</span>
+                            </p>
+                            <div id="quickStudentList" class="flex flex-wrap gap-2">
+                                <!-- Populated dynamically by app.js -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Company Login Form -->
+                <div id="loginFormCompany" class="login-pane hidden">
+                    <div class="max-w-md mx-auto">
+                        <div class="text-center mb-6">
+                            <h3 class="text-lg font-bold text-white">Recruiting Partner Portal</h3>
+                            <p class="text-xs text-slate-400">Manage placement drives, review applicants, and issue offers</p>
+                        </div>
+
+                        <form id="companyLoginForm" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1.5">Select Recruiting Company</label>
+                                <select id="companySelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-indigo-500">
+                                    <option value="CMP-GOOG-01">Google India Pvt Ltd (Tier-1 Super Dream)</option>
+                                    <option value="CMP-MSFT-02">Microsoft India R&D (Tier-1 Super Dream)</option>
+                                    <option value="CMP-CSCO-03">Cisco Systems India (Tier-2 Dream)</option>
+                                    <option value="CMP-QCOM-04">Qualcomm India (Tier-1 Super Dream)</option>
+                                    <option value="CMP-TCS-05">Tata Consultancy Services (Tier-3 Mass)</option>
+                                    <option value="CMP-LTTS-06">L&T Technology Services (Tier-3 Core)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1.5 flex justify-between">
+                                    <span>Company Password</span>
+                                    <span class="text-[10px] text-sky-400 font-normal">Company ID or Short Name</span>
+                                </label>
+                                <input type="password" id="companyPasswordInput" value="CMP-MSFT-02" placeholder="e.g. CMP-MSFT-02 or microsoft" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-sky-500 font-mono">
+                            </div>
+                            <div class="p-2.5 rounded-xl bg-sky-950/40 border border-sky-900/60 text-[11px] text-sky-200 flex items-center gap-2">
+                                <span>🔑</span>
+                                <span><strong>Default Password:</strong> Company ID (e.g. <code class="font-mono font-bold text-white">CMP-MSFT-02</code>) or company name (<code class="font-mono font-bold text-white">microsoft</code>).</span>
+                            </div>
+                            <button type="submit" class="w-full py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs uppercase tracking-wider transition shadow-lg shadow-sky-600/30">
+                                Enter Company Portal →
+                            </button>
+                        </form>
+
+                        <div class="mt-4 text-center">
+                            <p class="text-xs text-slate-400">
+                                New corporate partner? 
+                                <button type="button" onclick="setLoginRole('reg_company')" class="text-sky-400 font-bold hover:underline ml-1">Register New Company →</button>
+                            </p>
+                        </div>
+
+                        <div class="mt-6 pt-6 border-t border-slate-800">
+                            <p class="text-xs font-semibold text-slate-400 mb-2.5">⚡ 1-Click Fast Company Switch:</p>
+                            <div id="quickCompanyList" class="flex flex-wrap gap-2">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. TPO / University Admin Login Form -->
+                <div id="loginFormTpo" class="login-pane hidden">
+                    <div class="max-w-md mx-auto text-center">
+                        <div class="w-16 h-16 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-3xl flex items-center justify-center mx-auto mb-4">
+                            🏛️
+                        </div>
+                        <h3 class="text-lg font-bold text-white">Placement Cell Administration</h3>
+                        <p class="text-xs text-slate-400 mb-6">Dean of Corporate Relations & Placement Officers Dashboard</p>
+
+                        <form id="tpoLoginForm" class="space-y-4">
+                            <div class="bg-slate-900/60 p-4 rounded-xl border border-slate-800 text-left text-xs space-y-1 text-slate-300">
+                                <div><strong>Officer:</strong> Prof. Arvind Kulkarni</div>
+                                <div><strong>Designation:</strong> Dean - Corporate Relations & Placements</div>
+                                <div><strong>Email:</strong> arvind.kulkarni@rvce.edu.in</div>
+                                <div><strong>Cabin:</strong> Admin Wing Room 204</div>
+                            </div>
+                            <div class="text-left">
+                                <label class="block text-xs font-semibold text-slate-300 mb-1.5 flex justify-between">
+                                    <span>TPO Administrator Password</span>
+                                    <span class="text-[10px] text-purple-400 font-normal">Default: admin123</span>
+                                </label>
+                                <input type="password" id="tpoPasswordInput" value="admin123" placeholder="Enter TPO Password" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-purple-500 font-mono">
+                            </div>
+                            <div class="p-2.5 rounded-xl bg-purple-950/40 border border-purple-900/60 text-[11px] text-purple-200 flex items-center gap-2 text-left">
+                                <span>🔒</span>
+                                <span><strong>Default Password:</strong> <code class="font-mono font-bold text-white">admin123</code> or <code class="font-mono font-bold text-white">TPO-EMP-101</code>.</span>
+                            </div>
+                            <button type="submit" class="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs uppercase tracking-wider transition shadow-lg shadow-purple-600/30">
+                                Access University Admin Portal →
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 4. Student Registration Form (Persists to MySQL Database) -->
+                <div id="registerFormStudent" class="login-pane hidden">
+                    <div class="max-w-2xl mx-auto">
+                        <div class="text-center mb-6">
+                            <span class="px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                New Candidate Onboarding
+                            </span>
+                            <h3 class="text-xl font-bold text-white mt-2">Student Placement Registration</h3>
+                            <p class="text-xs text-slate-400 mt-1">Saves directly into MySQL <code class="font-mono text-emerald-300">students</code> & <code class="font-mono text-emerald-300">student_skills</code> tables and auto-generates your ATS resume</p>
+                        </div>
+
+                        <form id="studentRegistrationForm" class="space-y-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">First Name *</label>
+                                    <input type="text" id="regStuFirstName" required placeholder="e.g. Rahul" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Last Name *</label>
+                                    <input type="text" id="regStuLastName" required placeholder="e.g. Verma" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">USN (University Seat Number) *</label>
+                                    <input type="text" id="regStuUsn" required placeholder="e.g. 1RV21CS099" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white font-mono uppercase">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Gender *</label>
+                                    <select id="regStuGender" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Academic Department *</label>
+                                    <select id="regStuDept" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                        <option value="DEPT-CSE">CSE - Computer Science & Engineering</option>
+                                        <option value="DEPT-ISE">ISE - Information Science & Engineering</option>
+                                        <option value="DEPT-AIDS">AIDS - Artificial Intelligence & Data Science</option>
+                                        <option value="DEPT-ECE">ECE - Electronics & Communication Engineering</option>
+                                        <option value="DEPT-MECH">MECH - Mechanical Engineering</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Graduation Batch Year *</label>
+                                    <input type="number" id="regStuGradYear" value="2025" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">College Email *</label>
+                                    <input type="email" id="regStuCollegeEmail" required placeholder="e.g. rahulv.cs21@rvce.edu.in" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Personal Email</label>
+                                    <input type="email" id="regStuPersonalEmail" placeholder="e.g. rahul.verma@gmail.com" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Phone Number</label>
+                                    <input type="text" id="regStuPhone" placeholder="+91-9876543210" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Current Cumulative CGPA (0 - 10) *</label>
+                                    <input type="number" step="0.01" min="0" max="10" id="regStuCgpa" value="8.50" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white font-bold text-emerald-400">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">10th Percentage (%) *</label>
+                                    <input type="number" step="0.1" min="0" max="100" id="regStuTenth" value="95.0" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">12th / Pre-University (%) *</label>
+                                    <input type="number" step="0.1" min="0" max="100" id="regStuTwelfth" value="92.0" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Active Backlogs *</label>
+                                    <input type="number" min="0" id="regStuBacklogs" value="0" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Login Password</label>
+                                    <input type="password" id="regStuPassword" placeholder="Default is your USN" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white font-mono">
+                                </div>
+                                <div class="col-span-full">
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Technical Skills (Comma Separated)</label>
+                                    <input type="text" id="regStuSkills" value="Python, Java, SQL, React.js, Docker, Git" placeholder="e.g. Python, SQL, React, Node.js" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">GitHub Profile URL</label>
+                                    <input type="url" id="regStuGithub" placeholder="https://github.com/username" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">LinkedIn Profile URL</label>
+                                    <input type="url" id="regStuLinkedin" placeholder="https://linkedin.com/in/username" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                </div>
+                            </div>
+
+                            <button type="submit" class="w-full py-3.5 mt-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider transition shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2">
+                                <span>✓</span> Register Student Profile & Enter Portal
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 5. Company Registration Form (Persists to MySQL Database) -->
+                <div id="registerFormCompany" class="login-pane hidden">
+                    <div class="max-w-2xl mx-auto">
+                        <div class="text-center mb-6">
+                            <span class="px-3 py-1 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                Corporate Recruitment Onboarding
+                            </span>
+                            <h3 class="text-xl font-bold text-white mt-2">Recruiting Partner Registration</h3>
+                            <p class="text-xs text-slate-400 mt-1">Saves directly into MySQL <code class="font-mono text-amber-300">companies</code> table and activates campus drive posting privileges</p>
+                        </div>
+
+                        <form id="companyRegistrationForm" class="space-y-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="col-span-full sm:col-span-1">
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Company Name *</label>
+                                    <input type="text" id="regCompName" required placeholder="e.g. Amazon India Development Center" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                </div>
+                                <div class="col-span-full sm:col-span-1">
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Industry Domain *</label>
+                                    <input type="text" id="regCompDomain" required placeholder="e.g. E-Commerce & Cloud Computing" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Recruitment Tier Category *</label>
+                                    <select id="regCompTier" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                        <option value="Tier-1 (Super Dream)">Tier-1 (Super Dream) [&gt; 20 LPA]</option>
+                                        <option value="Tier-2 (Dream)">Tier-2 (Dream) [10 – 20 LPA]</option>
+                                        <option value="Tier-3 (Mass/Core)">Tier-3 (Mass/Core) [&lt; 10 LPA]</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Headquarters Location</label>
+                                    <input type="text" id="regCompHq" value="Seattle, WA (Bangalore IDC)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Company Website URL</label>
+                                    <input type="url" id="regCompWebsite" placeholder="https://www.amazon.jobs" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Portal Login Password *</label>
+                                    <input type="password" id="regCompPassword" required placeholder="Enter login password" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white font-mono">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">HR Lead / Recruiter Name *</label>
+                                    <input type="text" id="regCompHrName" required placeholder="e.g. Priya Sharma" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">HR Official Email *</label>
+                                    <input type="email" id="regCompHrEmail" required placeholder="e.g. priya.sharma@amazon.com" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                </div>
+                                <div class="col-span-full">
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">HR Contact Phone</label>
+                                    <input type="text" id="regCompHrPhone" value="+91-80-49001234" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                </div>
+                            </div>
+
+                            <button type="submit" class="w-full py-3.5 mt-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs uppercase tracking-wider transition shadow-lg shadow-amber-600/30 flex items-center justify-center gap-2">
+                                <span>✓</span> Register Company & Access Partner Portal
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+
+        <!-- =================================================================== -->
+        <!-- VIEW 2: PORTAL VIEW (STUDENT / COMPANY / TPO) -->
+        <!-- =================================================================== -->
+        <div id="portalView" class="hidden">
+
+            <!-- --------------------------------------------------------------- -->
+            <!-- 🎓 PORTAL: STUDENT -->
+            <!-- --------------------------------------------------------------- -->
+            <section id="studentPortal" class="hidden space-y-6">
+                <!-- Top Student Profile Banner -->
+                <div class="glass-panel rounded-2xl p-6 border border-slate-800">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-2xl shadow-lg shadow-indigo-600/30 font-bold">
+                                👨‍🎓
+                            </div>
+                            <div>
+                                <h2 id="stuBannerName" class="text-2xl font-black text-white">Student Name</h2>
+                                <p class="text-xs text-slate-400 flex items-center gap-2 mt-1">
+                                    <span id="stuBannerUsn" class="font-mono bg-slate-900 px-2 py-0.5 rounded text-indigo-300 font-bold">1RV21CS001</span>
+                                    <span>•</span>
+                                    <span id="stuBannerDept">Computer Science</span>
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Academic Chips & Resume Action -->
+                        <div class="flex flex-wrap items-center gap-3 text-xs">
+                            <div class="bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800">
+                                <span id="stuBannerCgpa" class="font-bold text-emerald-400">CGPA: 9.42</span>
+                            </div>
+                            <div class="bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-800">
+                                <span id="stuBannerBacklogs" class="font-bold text-slate-300">Backlogs: 0</span>
+                            </div>
+                            <span id="stuBannerStatus" class="px-3 py-1 rounded-full text-xs font-semibold border bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
+                                Placed
+                            </span>
+                            <button onclick="StudentPortal.openResume()" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 transition flex items-center gap-1.5" title="Generate printable PDF-ready ATS Resume from database">
+                                <span>📄</span> Auto-Generated Resume
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Student Navigation Tabs -->
+                    <div class="flex flex-wrap gap-2 mt-6 pt-6 border-t border-slate-800/80">
+                        <button onclick="App.switchTab('stu', 'drives')" data-tab="drives" class="tab-btn active px-4 py-2 rounded-xl text-xs font-bold transition">
+                            💼 Campus Drives & Eligibility
+                        </button>
+                        <button onclick="App.switchTab('stu', 'apps')" data-tab="apps" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white">
+                            📝 My Applications & Rounds
+                        </button>
+                        <button onclick="App.switchTab('stu', 'offers')" data-tab="offers" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white">
+                            🏆 Placement Offers
+                        </button>
+                        <button onclick="App.switchTab('stu', 'profile')" data-tab="profile" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white">
+                            👤 Academics & Skills
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab 1: Drives Explorer -->
+                <div id="stu-drives" class="tab-pane">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-white">Campus Recruitment Drives</h3>
+                            <p class="text-xs text-slate-400">Live eligibility calculated against your CGPA, backlogs, and academic department</p>
+                        </div>
+                    </div>
+                    <div id="stuDrivesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Drives Cards injected dynamically -->
+                    </div>
+                </div>
+
+                <!-- Tab 2: Applications Tracker -->
+                <div id="stu-apps" class="tab-pane hidden space-y-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-lg font-bold text-white">My Submitted Applications & Interview Timeline</h3>
+                    </div>
+                    <div id="stuApplicationsContainer" class="space-y-4">
+                        <!-- Application Cards with Round Timelines -->
+                    </div>
+                </div>
+
+                <!-- Tab 3: Offers -->
+                <div id="stu-offers" class="tab-pane hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-white">Official Placement Offers</h3>
+                            <p class="text-xs text-slate-400">Subject to the University "One Student, One Offer" placement policy</p>
+                        </div>
+                    </div>
+                    <div id="stuOffersContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Offers injected dynamically -->
+                    </div>
+                </div>
+
+                <!-- Tab 4: Profile & Skills -->
+                <div id="stu-profile" class="tab-pane hidden">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Left: Academic Record -->
+                        <div class="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
+                            <h4 class="text-sm font-bold text-white uppercase tracking-wider">Academic Record</h4>
+                            <div class="space-y-3 text-xs">
+                                <div class="flex justify-between p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                                    <span class="text-slate-400">10th Grade Percentage:</span>
+                                    <strong id="stuTenth" class="text-white">96.5%</strong>
+                                </div>
+                                <div class="flex justify-between p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                                    <span class="text-slate-400">12th Grade Percentage:</span>
+                                    <strong id="stuTwelfth" class="text-white">94.2%</strong>
+                                </div>
+                                <div class="flex justify-between p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                                    <span class="text-slate-400">Graduation Year:</span>
+                                    <strong id="stuGradYear" class="text-indigo-400">2025</strong>
+                                </div>
+                                <div class="flex justify-between p-2.5 rounded-lg bg-slate-900 border border-slate-800">
+                                    <span class="text-slate-400">College Email:</span>
+                                    <span id="stuEmail" class="text-slate-300 truncate">student@rvce.edu.in</span>
+                                </div>
+                            </div>
+
+                            <!-- Skills Manager -->
+                            <div class="pt-4 border-t border-slate-800">
+                                <div class="flex justify-between items-center mb-3">
+                                    <h4 class="text-sm font-bold text-white uppercase tracking-wider">Technical Skills</h4>
+                                </div>
+                                <div id="stuSkillsList" class="flex flex-wrap gap-2 mb-4">
+                                    <!-- Skills pills -->
+                                </div>
+
+                                <form onsubmit="StudentPortal.addSkill(event)" class="flex gap-2">
+                                    <input type="text" id="newSkillName" placeholder="Skill (e.g. Docker)" class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white">
+                                    <select id="newSkillLevel" class="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white">
+                                        <option value="Expert">Expert</option>
+                                        <option value="Advanced">Advanced</option>
+                                        <option value="Intermediate" selected>Intermediate</option>
+                                        <option value="Beginner">Beginner</option>
+                                    </select>
+                                    <button type="submit" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold">
+                                        + Add
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Right: Editable Contacts & Links -->
+                        <div class="glass-panel p-6 rounded-2xl border border-slate-800 lg:col-span-2">
+                            <h4 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Contact Information & Portfolio Links</h4>
+                            <form onsubmit="StudentPortal.saveProfile(event)" class="space-y-4">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-400 mb-1">Personal Email</label>
+                                        <input type="email" id="stuPersonalEmail" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-400 mb-1">Phone Number</label>
+                                        <input type="text" id="stuPhone" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-400 mb-1">GitHub Portfolio URL</label>
+                                        <input type="url" id="stuGithub" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-400 mb-1">LinkedIn Profile URL</label>
+                                        <input type="url" id="stuLinkedin" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                    </div>
+                                    <div class="col-span-full">
+                                        <label class="block text-xs font-semibold text-slate-400 mb-1">Resume Cloud Storage URL</label>
+                                        <input type="url" id="stuResume" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                    </div>
+                                    <div class="col-span-full pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                                        <div>
+                                            <h5 class="text-xs font-bold text-white flex items-center gap-1.5">
+                                                <span>📄</span> System Auto-Generated Resume
+                                            </h5>
+                                            <p class="text-[11px] text-slate-400">Pulls verified CGPA, 10th/12th percentages, active skills, and placement offers live from the database.</p>
+                                        </div>
+                                        <button type="button" onclick="StudentPortal.openResume()" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-indigo-600/30 whitespace-nowrap">
+                                            View / Print Resume ↗
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <button type="submit" class="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-600/30 transition">
+                                        Save Profile Changes
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- --------------------------------------------------------------- -->
+            <!-- 🏢 PORTAL: COMPANY -->
+            <!-- --------------------------------------------------------------- -->
+            <section id="companyPortal" class="hidden space-y-6">
+                <!-- Company Header Banner -->
+                <div class="glass-panel rounded-2xl p-6 border border-slate-800">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 flex items-center justify-center text-2xl shadow-lg shadow-sky-500/30 font-bold">
+                                🏢
+                            </div>
+                            <div>
+                                <h2 id="compBannerName" class="text-2xl font-black text-white">Company Name</h2>
+                                <p id="compBannerDomain" class="text-xs text-indigo-400 font-semibold">Software & Cloud</p>
+                                <p id="compBannerHq" class="text-[11px] text-slate-400">Headquarters</p>
+                            </div>
+                        </div>
+
+                        <div class="text-right">
+                            <span id="compBannerTier" class="px-3 py-1 rounded-full text-xs font-semibold border bg-purple-500/20 text-purple-300 border-purple-500/30">
+                                Tier-1 (Super Dream)
+                            </span>
+                            <p id="compBannerHr" class="text-xs text-slate-400 mt-2">HR Lead Contact</p>
+                        </div>
+                    </div>
+
+                    <!-- Company Navigation Tabs -->
+                    <div class="flex flex-wrap gap-2 mt-6 pt-6 border-t border-slate-800/80">
+                        <button onclick="App.switchTab('comp', 'drives')" data-tab="drives" class="tab-btn active px-4 py-2 rounded-xl text-xs font-bold transition">
+                            📢 Active Drives
+                        </button>
+                        <button onclick="App.switchTab('comp', 'post')" data-tab="post" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white">
+                            ➕ Post Campus Drive
+                        </button>
+                        <button onclick="App.switchTab('comp', 'applicants')" data-tab="applicants" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white">
+                            👥 Applicant Review
+                        </button>
+                        <button onclick="App.switchTab('comp', 'rounds')" data-tab="rounds" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white">
+                            🎯 Interview Rounds & Grading
+                        </button>
+                        <button onclick="App.switchTab('comp', 'offers')" data-tab="offers" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white">
+                            📜 Issue Placement Offer
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab 1: Company Drives -->
+                <div id="comp-drives" class="tab-pane">
+                    <h3 class="text-lg font-bold text-white mb-4">Posted Campus Recruitment Drives</h3>
+                    <div id="compJobsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Job Cards -->
+                    </div>
+                </div>
+
+                <!-- Tab 2: Post Job Form -->
+                <div id="comp-post" class="tab-pane hidden">
+                    <div class="glass-panel p-6 sm:p-8 rounded-2xl border border-slate-800 max-w-3xl mx-auto">
+                        <h3 class="text-lg font-bold text-white mb-1">Create New Campus Recruitment Drive</h3>
+                        <p class="text-xs text-slate-400 mb-6">Specify role details, CTC package, minimum CGPA cutoff, and approved branches</p>
+
+                        <form id="postJobForm" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Job Title</label>
+                                    <input type="text" id="postJobTitle" required placeholder="e.g. SDE - 1 (Backend Systems)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Role Type</label>
+                                    <select id="postJobType" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white">
+                                        <option value="Full-Time SDE">Full-Time SDE</option>
+                                        <option value="Internship">Internship</option>
+                                        <option value="Internship + Full-Time">Internship + Full-Time</option>
+                                        <option value="Core Engineering Trainee">Core Engineering Trainee</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Package CTC (in LPA)</label>
+                                    <input type="number" step="0.5" id="postJobCtc" required placeholder="e.g. 24.5" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Min CGPA Cutoff</label>
+                                    <input type="number" step="0.1" id="postJobMinCgpa" value="7.5" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Max Backlogs Allowed</label>
+                                    <input type="number" id="postJobMaxBacklogs" value="0" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Job Location</label>
+                                    <input type="text" id="postJobLocation" value="Bangalore" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Drive Date</label>
+                                    <input type="date" id="postJobDate" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Registration Deadline</label>
+                                    <input type="datetime-local" id="postJobDeadline" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Job Description</label>
+                                <textarea id="postJobDesc" rows="3" required placeholder="Responsibilities, required skillsets, and tech stack..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-white"></textarea>
+                            </div>
+
+                            <!-- M:N Eligible Departments Checkboxes -->
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-2">Eligible Academic Departments (M:N Table)</label>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                                    <label class="flex items-center space-x-2 bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                                        <input type="checkbox" name="eligibleDepts" value="DEPT-CSE" checked class="rounded border-slate-700 text-indigo-600 focus:ring-0">
+                                        <span>CSE (Computer Science)</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2 bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                                        <input type="checkbox" name="eligibleDepts" value="DEPT-ISE" checked class="rounded border-slate-700 text-indigo-600 focus:ring-0">
+                                        <span>ISE (Information Sci)</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2 bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                                        <input type="checkbox" name="eligibleDepts" value="DEPT-AIDS" checked class="rounded border-slate-700 text-indigo-600 focus:ring-0">
+                                        <span>AIDS (AI & Data Sci)</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2 bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                                        <input type="checkbox" name="eligibleDepts" value="DEPT-ECE" class="rounded border-slate-700 text-indigo-600 focus:ring-0">
+                                        <span>ECE (Electronics)</span>
+                                    </label>
+                                    <label class="flex items-center space-x-2 bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                                        <input type="checkbox" name="eligibleDepts" value="DEPT-MECH" class="rounded border-slate-700 text-indigo-600 focus:ring-0">
+                                        <span>MECH (Mechanical)</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs uppercase tracking-wider shadow-lg shadow-indigo-600/30 transition">
+                                Publish Campus Drive 🚀
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Applicant Review -->
+                <div id="comp-applicants" class="tab-pane hidden space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-white">Registered Applicants</h3>
+                            <p class="text-xs text-slate-400">Review candidate CGPA, backlogs, technical stack and update status</p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <label class="text-xs font-semibold text-slate-400">Select Drive:</label>
+                            <select id="applicantJobSelect" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-white">
+                                <!-- Options populated dynamically -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel rounded-2xl border border-slate-800 overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead class="bg-slate-900 text-slate-300 text-[11px] uppercase tracking-wider border-b border-slate-800">
+                                <tr>
+                                    <th class="py-3 px-4">Candidate Name / USN</th>
+                                    <th class="py-3 px-4">Branch</th>
+                                    <th class="py-3 px-4">CGPA</th>
+                                    <th class="py-3 px-4">Skills Stack</th>
+                                    <th class="py-3 px-4">Status</th>
+                                    <th class="py-3 px-4">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="applicantsTableBody">
+                                <!-- Applicants rows -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab 4: Interview Rounds & Grading -->
+                <div id="comp-rounds" class="tab-pane hidden space-y-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Left: Add New Interview Round -->
+                        <div class="glass-panel p-6 rounded-2xl border border-slate-800">
+                            <h4 class="text-sm font-bold text-white uppercase tracking-wider mb-2">Schedule Interview Round</h4>
+                            <p class="text-xs text-slate-400 mb-4">Add testing phases (Coding OA, Technical 1, System Design, HR)</p>
+
+                            <form id="createRoundForm" class="space-y-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-400 mb-1">Target Drive</label>
+                                    <select id="roundsJobSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-400 mb-1">Round Name</label>
+                                    <input type="text" id="roundTypeName" required placeholder="e.g. Technical Round 2 (System Design)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-400 mb-1">Scheduled Time</label>
+                                    <input type="datetime-local" id="roundTimestamp" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-400 mb-1">Platform / Room Link</label>
+                                    <input type="text" id="roundVenue" required placeholder="e.g. Google Meet / Lab 401" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                                </div>
+                                <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition">
+                                    Add Round Phase +
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Right: Grade Candidate (Tests Trigger 5!) -->
+                        <div class="glass-panel p-6 rounded-2xl border border-slate-800">
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="text-sm font-bold text-white uppercase tracking-wider">Candidate Evaluation</h4>
+                                <span class="text-[10px] px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 font-semibold font-mono">
+                                    Tests Trigger 5
+                                </span>
+                            </div>
+                            <p class="text-xs text-slate-400 mb-4">Marking a student as <strong class="text-rose-400">Disqualified</strong> triggers automatic status sync to Rejected!</p>
+
+                            <form id="gradeCandidateForm" class="space-y-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-400 mb-1">Candidate</label>
+                                    <select id="gradeStudentSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-400 mb-1">Interview Round ID</label>
+                                    <select id="gradeRoundSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                                        <option value="RND-GOOG-01">RND-GOOG-01 (Coding OA)</option>
+                                        <option value="RND-GOOG-02">RND-GOOG-02 (Technical 1)</option>
+                                        <option value="RND-MSFT-01">RND-MSFT-01 (Diagnostic OA)</option>
+                                        <option value="RND-MSFT-02">RND-MSFT-02 (Tech 1 - Java)</option>
+                                        <option value="RND-CSCO-02">RND-CSCO-02 (Socket & TCP/IP)</option>
+                                    </select>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-400 mb-1">Result Status</label>
+                                        <select id="gradeStatusSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                                            <option value="Qualified">Qualified</option>
+                                            <option value="Disqualified">Disqualified (Auto-rejects!)</option>
+                                            <option value="Under Evaluation">Under Evaluation</option>
+                                            <option value="Absent">Absent</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-400 mb-1">Score (Out of 100)</label>
+                                        <input type="number" id="gradeScore" value="88" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-400 mb-1">Interviewer Remarks</label>
+                                    <textarea id="gradeRemarks" rows="2" placeholder="Feedback on algorithms, complexity, and communication..." class="w-full bg-slate-900 border border-slate-700 rounded-xl p-2.5 text-xs text-white"></textarea>
+                                </div>
+                                <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition">
+                                    Submit Evaluation & Sync State ✓
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 5: Issue Offer Form (Tests Trigger 6!) -->
+                <div id="comp-offers" class="tab-pane hidden">
+                    <div class="glass-panel p-6 sm:p-8 rounded-2xl border border-slate-800 max-w-2xl mx-auto">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="text-lg font-bold text-white">Extend Placement Offer</h3>
+                            <span class="text-xs px-2.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-semibold font-mono">
+                                Tests Trigger 6
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-400 mb-6">
+                            Guarantees base salary is positive and <strong class="text-slate-300">Base Salary + Joining Bonus does not exceed Total CTC</strong>.
+                        </p>
+
+                        <form id="issueOfferForm" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Target Selected Applicant</label>
+                                <select id="offerApplicationSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-white">
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Offered CTC (LPA)</label>
+                                    <input type="number" step="0.5" id="offerCtc" value="28.0" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Base Salary (LPA)</label>
+                                    <input type="number" step="0.5" id="offerBaseSalary" value="16.5" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 mb-1">Joining Bonus (LPA)</label>
+                                    <input type="number" step="0.5" id="offerBonus" value="3.5" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 mb-1">Tentative Joining Date</label>
+                                <input type="date" id="offerJoiningDate" value="2025-08-01" required class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2 text-xs text-white">
+                            </div>
+
+                            <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-lg shadow-emerald-600/30 transition">
+                                Issue Official Offer Letter 📜
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- --------------------------------------------------------------- -->
+            <!-- 🏛️ PORTAL: UNIVERSITY TPO (ADMIN) -->
+            <!-- --------------------------------------------------------------- -->
+            <section id="tpoPortal" class="hidden space-y-6">
+                <!-- TPO Banner -->
+                <div class="glass-panel rounded-2xl p-6 border border-slate-800">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-14 h-14 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center text-2xl shadow-lg shadow-purple-600/30 font-bold">
+                                🏛️
+                            </div>
+                            <div>
+                                <h2 class="text-2xl font-black text-white">University Placement Administration</h2>
+                                <p class="text-xs text-indigo-400 font-semibold">Training & Placement Cell • RV College of Engineering</p>
+                                <p class="text-[11px] text-slate-400">Head: Prof. Arvind Kulkarni (Admin Wing 204)</p>
+                            </div>
+                        </div>
+
+                        <!-- Placement Analytics Counters -->
+                        <div class="flex flex-wrap items-center gap-3">
+                            <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 text-center min-w-[85px]">
+                                <span class="text-[10px] text-slate-400 uppercase font-bold block">Enrolled</span>
+                                <span id="tpoTotalEnrolled" class="text-lg font-black text-white">10</span>
+                            </div>
+                            <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 text-center min-w-[85px]">
+                                <span class="text-[10px] text-slate-400 uppercase font-bold block">Placed</span>
+                                <span id="tpoTotalPlaced" class="text-lg font-black text-emerald-400">6</span>
+                            </div>
+                            <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 text-center min-w-[85px]">
+                                <span class="text-[10px] text-slate-400 uppercase font-bold block">Rate</span>
+                                <span id="tpoPlacementRate" class="text-lg font-black text-indigo-400">60%</span>
+                            </div>
+                            <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 text-center min-w-[95px]">
+                                <span class="text-[10px] text-slate-400 uppercase font-bold block">Highest CTC</span>
+                                <span id="tpoHighestCtc" class="text-lg font-black text-purple-400">₹32.5 LPA</span>
+                            </div>
+                            <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 text-center min-w-[95px]">
+                                <span class="text-[10px] text-slate-400 uppercase font-bold block">Average CTC</span>
+                                <span id="tpoAvgCtc" class="text-lg font-black text-sky-400">₹22.5 LPA</span>
+                            </div>
+                            <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 text-center min-w-[85px]">
+                                <span class="text-[10px] text-slate-400 uppercase font-bold block">Higher Ed</span>
+                                <span id="tpoHigherStudies" class="text-lg font-black text-amber-400">1</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TPO Navigation Tabs -->
+                    <div class="flex flex-wrap gap-2 mt-6 pt-6 border-t border-slate-800/80">
+                        <button onclick="App.switchTab('tpo', 'analytics')" data-tab="analytics" class="tab-btn active px-4 py-2 rounded-xl text-xs font-bold transition">
+                            📈 Executive Analytics
+                        </button>
+                        <button onclick="App.switchTab('tpo', 'funnel')" data-tab="funnel" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white">
+                            🎯 Drive Conversion Funnel
+                        </button>
+                        <button onclick="App.switchTab('tpo', 'placed')" data-tab="placed" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white">
+                            🏆 Placed Students View
+                        </button>
+                        <button onclick="App.switchTab('tpo', 'sp')" data-tab="sp" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white">
+                            ⚙️ Stored Procedures
+                        </button>
+                        <button onclick="App.switchTab('tpo', 'audit')" data-tab="audit" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white">
+                            🛡️ Live Trigger Audit Log
+                        </button>
+                        <button onclick="App.switchTab('tpo', 'console')" data-tab="console" class="tab-btn px-4 py-2 rounded-xl text-xs font-bold transition text-amber-300 hover:text-white border border-amber-500/20">
+                            💻 DBMS Query Console (Lab Viva)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab 1: Executive Analytics -->
+                <div id="tpo-analytics" class="tab-pane space-y-6">
+                    <!-- Charts Grid -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="glass-panel p-5 rounded-2xl border border-slate-800 lg:col-span-2">
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Department-wise Placement Rates & Average Package</h4>
+                            <canvas id="deptBarChart" height="120"></canvas>
+                        </div>
+                        <div class="glass-panel p-5 rounded-2xl border border-slate-800 space-y-4">
+                            <div>
+                                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Offers by Company Tier</h4>
+                                <canvas id="tierPieChart" height="140"></canvas>
+                            </div>
+                            <div class="pt-3 border-t border-slate-800">
+                                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Gender Diversity Placement Ratio</h4>
+                                <canvas id="genderPieChart" height="140"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Department Stats Table from View vw_department_placement_stats -->
+                    <div class="glass-panel rounded-2xl border border-slate-800 p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <h3 class="text-base font-bold text-white">Branch Placement Analytics (Database View)</h3>
+                                <p class="text-xs text-slate-400">Directly querying MySQL View: <code class="text-indigo-400 font-mono">vw_department_placement_stats</code></p>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="bg-slate-900 text-slate-300 text-[11px] uppercase tracking-wider border-b border-slate-800">
+                                    <tr>
+                                        <th class="py-3 px-4">Department Name</th>
+                                        <th class="py-3 px-4 text-center">Enrolled</th>
+                                        <th class="py-3 px-4 text-center">Placed</th>
+                                        <th class="py-3 px-4 text-center">Placement %</th>
+                                        <th class="py-3 px-4 text-right">Highest CTC</th>
+                                        <th class="py-3 px-4 text-right">Average CTC</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="deptPlacementTableBody">
+                                    <!-- Rows injected dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Drive Funnel -->
+                <div id="tpo-funnel" class="tab-pane hidden">
+                    <div class="glass-panel rounded-2xl border border-slate-800 p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <h3 class="text-base font-bold text-white">Campus Drives & Conversion Metrics</h3>
+                                <p class="text-xs text-slate-400">Directly querying MySQL View: <code class="text-indigo-400 font-mono">vw_job_drive_status</code></p>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="bg-slate-900 text-slate-300 text-[11px] uppercase tracking-wider border-b border-slate-800">
+                                    <tr>
+                                        <th class="py-3 px-4">Company</th>
+                                        <th class="py-3 px-4">Role Title</th>
+                                        <th class="py-3 px-4">CTC Package</th>
+                                        <th class="py-3 px-4 text-center">Registered</th>
+                                        <th class="py-3 px-4 text-center">Selected</th>
+                                        <th class="py-3 px-4 text-center">Conversion %</th>
+                                        <th class="py-3 px-4">Drive Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="drivesFunnelTableBody">
+                                    <!-- Injected dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Placed Students Summary View -->
+                <div id="tpo-placed" class="tab-pane hidden">
+                    <div class="glass-panel rounded-2xl border border-slate-800 p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <h3 class="text-base font-bold text-white">Placed Students Master Summary</h3>
+                                <p class="text-xs text-slate-400">Directly querying MySQL View: <code class="text-indigo-400 font-mono">vw_placed_students_summary</code></p>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="bg-slate-900 text-slate-300 text-[11px] uppercase tracking-wider border-b border-slate-800">
+                                    <tr>
+                                        <th class="py-3 px-4">Student Name</th>
+                                        <th class="py-3 px-4">USN</th>
+                                        <th class="py-3 px-4">Branch</th>
+                                        <th class="py-3 px-4">Company</th>
+                                        <th class="py-3 px-4">Role Title</th>
+                                        <th class="py-3 px-4">Offered CTC</th>
+                                        <th class="py-3 px-4">Joining Date</th>
+                                        <th class="py-3 px-4">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="placedStudentsTableBody">
+                                    <!-- Injected dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 4: Stored Procedures Runner -->
+                <div id="tpo-sp" class="tab-pane hidden space-y-6">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Procedure 1: sp_GetEligibleStudentsForJob -->
+                        <div class="glass-panel p-6 rounded-2xl border border-slate-800">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <span class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-mono text-[10px] font-bold">PROCEDURE 1</span>
+                                <h4 class="text-sm font-bold text-white">sp_GetEligibleStudentsForJob</h4>
+                            </div>
+                            <p class="text-xs text-slate-400 mb-4">
+                                Dynamic SQL procedure returning candidate pool meeting CGPA, backlog and approved department criteria for any drive.
+                            </p>
+
+                            <div class="flex gap-2 mb-4">
+                                <select id="spJobSelect" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                                    <!-- Populated dynamically -->
+                                </select>
+                                <button onclick="TPOPortal.runEligibleStudentsProcedure()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-indigo-600/30">
+                                    Execute CALL ⚡
+                                </button>
+                            </div>
+
+                            <div id="spResultContainer" class="bg-slate-900/40 p-4 rounded-xl border border-slate-800/80 min-h-[140px]">
+                                <p class="text-xs text-slate-500 text-center py-8">Select a drive and click execute to run the stored procedure.</p>
+                            </div>
+                        </div>
+
+                        <!-- Procedure 2: sp_GetStudentPlacementProfile -->
+                        <div class="glass-panel p-6 rounded-2xl border border-slate-800">
+                            <div class="flex items-center space-x-2 mb-2">
+                                <span class="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono text-[10px] font-bold">PROCEDURE 2</span>
+                                <h4 class="text-sm font-bold text-white">sp_GetStudentPlacementProfile</h4>
+                            </div>
+                            <p class="text-xs text-slate-400 mb-4">
+                                Multi-result set stored procedure returning complete student profile and cross-company application history.
+                            </p>
+
+                            <div class="flex gap-2 mb-4">
+                                <select id="spStudentSelect" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white">
+                                    <!-- Populated dynamically -->
+                                </select>
+                                <button onclick="TPOPortal.runStudentProfileProcedure()" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-purple-600/30">
+                                    Execute CALL ⚡
+                                </button>
+                            </div>
+
+                            <div id="spProfileResultContainer" class="bg-slate-900/40 p-4 rounded-xl border border-slate-800/80 min-h-[140px]">
+                                <p class="text-xs text-slate-500 text-center py-8">Select a candidate and execute to run the stored procedure.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 5: Trigger Audit Trail -->
+                <div id="tpo-audit" class="tab-pane hidden">
+                    <div class="glass-panel rounded-2xl border border-slate-800 p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <h3 class="text-base font-bold text-white">Placement Offer Audit Log (Trigger 4 Table)</h3>
+                                <p class="text-xs text-slate-400">Populated automatically by MySQL trigger <code class="text-indigo-400 font-mono">trg_audit_offer_revisions</code> upon offer changes</p>
+                            </div>
+                            <button onclick="TPOPortal.loadAuditLogs()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 font-semibold border border-slate-700">
+                                Refresh Log 🔄
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="bg-slate-900 text-slate-300 text-[11px] uppercase tracking-wider border-b border-slate-800 font-mono">
+                                    <tr>
+                                        <th class="py-2.5 px-4">Log ID</th>
+                                        <th class="py-2.5 px-4">Offer ID</th>
+                                        <th class="py-2.5 px-4">Student ID</th>
+                                        <th class="py-2.5 px-4">Old Package / Status</th>
+                                        <th class="py-2.5 px-4">New Package / Status</th>
+                                        <th class="py-2.5 px-4">Changed By</th>
+                                        <th class="py-2.5 px-4">Timestamp</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="auditLogsTableBody">
+                                    <!-- Logs rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 6: Interactive DBMS Query Console -->
+                <div id="tpo-console" class="tab-pane hidden space-y-4">
+                    <div class="glass-panel p-6 rounded-2xl border border-slate-800">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                            <div>
+                                <h3 class="text-base font-bold text-amber-300 flex items-center gap-2">
+                                    <span>💻</span> Live DBMS Query Console (Lab & Viva Evaluation)
+                                </h3>
+                                <p class="text-xs text-slate-400">Pick any prepared query from your DBMS syllabus or write custom SQL statements</p>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <select id="prebuiltQuerySelect" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 max-w-sm">
+                                    <!-- Populated dynamically -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- SQL Editor -->
+                        <div class="relative mb-3">
+                            <textarea id="sqlEditor" rows="4" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs font-mono text-emerald-300 focus:outline-none focus:border-indigo-500 shadow-inner" placeholder="SELECT * FROM students;"></textarea>
+                        </div>
+
+                        <div class="flex justify-between items-center">
+                            <div id="queryOutputMeta">
+                                <span class="text-xs text-slate-500">Ready to execute</span>
+                            </div>
+                            <button id="btnRunQuery" class="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl transition shadow-lg shadow-indigo-600/30 flex items-center gap-2">
+                                <span>⚡</span> Run Query on MySQL
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Query Result Table -->
+                    <div class="glass-panel rounded-2xl border border-slate-800 p-4">
+                        <div id="queryOutputContainer">
+                            <p class="text-xs text-slate-500 text-center py-10">Select or write a query above and click "Run Query on MySQL" to inspect the live result table.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+
+        </div>
+    </main>
+
+    <!-- =================================================================== -->
+    <!-- AUTO-GENERATED RESUME MODAL (DATABASE SYNTHESIZED) -->
+    <!-- =================================================================== -->
+    <div id="resumeModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+        <div class="glass-panel bg-slate-900 border border-slate-800 rounded-3xl max-w-5xl w-full my-auto shadow-2xl flex flex-col max-h-[94vh] overflow-hidden">
+            <!-- Modal Header / Actions Toolbar -->
+            <div class="px-6 py-4 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-slate-950/70">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-xl shadow-lg shadow-indigo-600/30">
+                        📄
+                    </div>
+                    <div>
+                        <h3 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                            <span>Auto-Generated Student Resume</span>
+                            <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold font-mono">LIVE DATABASE RECORD</span>
+                        </h3>
+                        <p class="text-[11px] text-slate-400">ATS-Formatted • Synthesized from academic qualifications, skills & placement offers</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <button onclick="StudentPortal.printResume()" class="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-lg shadow-indigo-600/30 flex items-center gap-1.5" title="Print or save as PDF">
+                        <span>🖨️</span> Print / Save PDF
+                    </button>
+                    <button onclick="StudentPortal.copyResumeText()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition border border-slate-700 flex items-center gap-1.5" title="Copy text to clipboard">
+                        <span>📋</span> Copy Text
+                    </button>
+                    <button onclick="StudentPortal.closeResume()" class="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition border border-slate-700" title="Close">
+                        ✕
+                    </button>
+                </div>
+            </div>
+
+            <!-- Resume Content Scrollable Area -->
+            <div class="p-4 sm:p-8 overflow-y-auto flex-1 bg-slate-950/50">
+                <div id="resumePaper">
+                    <!-- Populated dynamically by StudentPortal.openResume() -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Trigger Error Modal (Demonstrates Database Rules) -->
+    <div id="triggerErrorModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="glass-panel bg-slate-900 border border-rose-600/60 rounded-3xl p-6 sm:p-8 max-w-lg w-full trigger-error-box shadow-2xl shadow-rose-900/40">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-12 h-12 rounded-2xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-2xl text-rose-400">
+                    🛡️
+                </div>
+                <div>
+                    <span id="triggerNameBadge" class="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30 uppercase">
+                        DBMS Trigger Enforcer
+                    </span>
+                    <h3 class="text-lg font-bold text-white mt-1">Database Constraint Blocked Action</h3>
+                </div>
+            </div>
+
+            <div class="bg-rose-950/40 p-4 rounded-xl border border-rose-900/60 mb-5 text-xs font-mono text-rose-200">
+                <strong class="block text-rose-400 text-sm mb-1">SQLSTATE 45000:</strong>
+                <span id="triggerErrorText">An error occurred</span>
+            </div>
+
+            <p class="text-xs text-slate-400 mb-6">
+                This operation was intercepted and prevented directly by a <strong>MySQL Database Trigger</strong> to protect relational integrity and university placement rules.
+            </p>
+
+            <button onclick="App.closeTriggerError()" class="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition border border-slate-700">
+                Acknowledge & Close
+            </button>
+        </div>
+    </div>
+
+    <!-- Quick Switch User Modal -->
+    <div id="switchUserModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="glass-panel bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-xl w-full">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <span>⇄</span> 1-Click Persona Switcher
+                </h3>
+                <button onclick="document.getElementById('switchUserModal').classList.add('hidden')" class="text-slate-400 hover:text-white">✕</button>
+            </div>
+
+            <div class="space-y-4 text-xs">
+                <div>
+                    <h4 class="text-xs font-bold uppercase text-indigo-400 tracking-wider mb-2">🎓 Switch to a Student</h4>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="App.quickLogin('student', 'STU-2021-CS001'); document.getElementById('switchUserModal').classList.add('hidden')" class="p-2.5 rounded-xl bg-slate-800/80 hover:bg-indigo-600 text-left transition border border-slate-700">
+                            <span class="font-bold text-white block">Aarav Sharma</span>
+                            <span class="text-slate-400 text-[10px]">CSE • 9.42 CGPA • Google Offer</span>
+                        </button>
+                        <button onclick="App.quickLogin('student', 'STU-2021-CS015'); document.getElementById('switchUserModal').classList.add('hidden')" class="p-2.5 rounded-xl bg-slate-800/80 hover:bg-indigo-600 text-left transition border border-slate-700">
+                            <span class="font-bold text-white block">Sneha Reddy</span>
+                            <span class="text-slate-400 text-[10px]">CSE • 8.85 CGPA • Microsoft Offer</span>
+                        </button>
+                        <button onclick="App.quickLogin('student', 'STU-2021-IS022'); document.getElementById('switchUserModal').classList.add('hidden')" class="p-2.5 rounded-xl bg-slate-800/80 hover:bg-indigo-600 text-left transition border border-slate-700">
+                            <span class="font-bold text-white block">Rohan Gupta</span>
+                            <span class="text-slate-400 text-[10px]">ISE • 8.15 CGPA • Cisco Offer</span>
+                        </button>
+                        <button onclick="App.quickLogin('student', 'STU-2021-ME030'); document.getElementById('switchUserModal').classList.add('hidden')" class="p-2.5 rounded-xl bg-slate-800/80 hover:bg-indigo-600 text-left transition border border-slate-700">
+                            <span class="font-bold text-white block">Rahul Nambiar</span>
+                            <span class="text-slate-400 text-[10px]">MECH • 7.20 CGPA • Unplaced</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-slate-800">
+                    <h4 class="text-xs font-bold uppercase text-sky-400 tracking-wider mb-2">🏢 Switch to a Company</h4>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="App.quickLogin('company', 'CMP-GOOG-01'); document.getElementById('switchUserModal').classList.add('hidden')" class="p-2 rounded-xl bg-slate-800 hover:bg-sky-600 text-center transition border border-slate-700 font-bold text-white">Google</button>
+                        <button onclick="App.quickLogin('company', 'CMP-MSFT-02'); document.getElementById('switchUserModal').classList.add('hidden')" class="p-2 rounded-xl bg-slate-800 hover:bg-sky-600 text-center transition border border-slate-700 font-bold text-white">Microsoft</button>
+                        <button onclick="App.quickLogin('company', 'CMP-CSCO-03'); document.getElementById('switchUserModal').classList.add('hidden')" class="p-2 rounded-xl bg-slate-800 hover:bg-sky-600 text-center transition border border-slate-700 font-bold text-white">Cisco</button>
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-slate-800">
+                    <h4 class="text-xs font-bold uppercase text-purple-400 tracking-wider mb-2">🏛️ Switch to Placement Cell Admin</h4>
+                    <button onclick="App.quickLogin('tpo'); document.getElementById('switchUserModal').classList.add('hidden')" class="w-full p-2.5 rounded-xl bg-purple-900/40 hover:bg-purple-600 text-left transition border border-purple-500/30 flex items-center justify-between">
+                        <div>
+                            <span class="font-bold text-white block">Prof. Arvind Kulkarni</span>
+                            <span class="text-purple-300 text-[10px]">Dean of Corporate Relations & Placements</span>
+                        </div>
+                        <span class="text-lg">🏛️</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MySQL Database Reconnect Modal -->
+    <div id="dbConfigModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="glass-panel bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <span>🗄️</span> MySQL Database Credentials
+                </h3>
+                <button onclick="App.closeDBModal()" class="text-slate-400 hover:text-white">✕</button>
+            </div>
+            <p class="text-xs text-slate-400 mb-4">Configure local MySQL parameters to query the live <code>college_placement_db</code> instance.</p>
+
+            <form onsubmit="App.reconnectDB(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-slate-400 mb-1">Host</label>
+                    <input type="text" id="dbHost" value="localhost" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-slate-400 mb-1">Port</label>
+                        <input type="number" id="dbPort" value="3306" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 mb-1">User</label>
+                        <input type="text" id="dbUser" value="root" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Password</label>
+                    <input type="password" id="dbPassword" placeholder="root password (if any)" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono">
+                </div>
+                <div>
+                    <label class="block text-slate-400 mb-1">Database Name</label>
+                    <input type="text" id="dbName" value="college_placement_db" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono">
+                </div>
+                <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition shadow-lg shadow-indigo-600/30">
+                    Connect to MySQL ⚡
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        function setLoginRole(role) {
+            document.querySelectorAll('.login-pane').forEach(el => el.classList.add('hidden'));
+            
+            const btnBaseClass = 'px-4 py-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 text-slate-400 hover:text-white';
+            const btnRegBaseStu = 'px-4 py-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 text-emerald-400 hover:text-white hover:bg-emerald-600/20 border border-emerald-500/20';
+            const btnRegBaseComp = 'px-4 py-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 text-amber-300 hover:text-white hover:bg-amber-600/20 border border-amber-500/20';
+
+            const btnStu = document.getElementById('tabBtnStudent');
+            const btnComp = document.getElementById('tabBtnCompany');
+            const btnTpo = document.getElementById('tabBtnTpo');
+            const btnRegStu = document.getElementById('tabBtnRegStudent');
+            const btnRegComp = document.getElementById('tabBtnRegCompany');
+
+            if (btnStu) btnStu.className = btnBaseClass;
+            if (btnComp) btnComp.className = btnBaseClass;
+            if (btnTpo) btnTpo.className = btnBaseClass;
+            if (btnRegStu) btnRegStu.className = btnRegBaseStu;
+            if (btnRegComp) btnRegComp.className = btnRegBaseComp;
+
+            if (role === 'student') {
+                document.getElementById('loginFormStudent')?.classList.remove('hidden');
+                if (btnStu) btnStu.className = 'px-4 py-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 bg-indigo-600 text-white shadow-lg shadow-indigo-600/30';
+            } else if (role === 'company') {
+                document.getElementById('loginFormCompany')?.classList.remove('hidden');
+                if (btnComp) btnComp.className = 'px-4 py-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 bg-sky-600 text-white shadow-lg shadow-sky-600/30';
+            } else if (role === 'tpo') {
+                document.getElementById('loginFormTpo')?.classList.remove('hidden');
+                if (btnTpo) btnTpo.className = 'px-4 py-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 bg-purple-600 text-white shadow-lg shadow-purple-600/30';
+            } else if (role === 'reg_student') {
+                document.getElementById('registerFormStudent')?.classList.remove('hidden');
+                if (btnRegStu) btnRegStu.className = 'px-4 py-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 bg-emerald-600 text-white shadow-lg shadow-emerald-600/30 border border-emerald-500';
+            } else if (role === 'reg_company') {
+                document.getElementById('registerFormCompany')?.classList.remove('hidden');
+                if (btnRegComp) btnRegComp.className = 'px-4 py-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-1.5 bg-amber-600 text-white shadow-lg shadow-amber-600/30 border border-amber-500';
+            }
+        }
+    </script>
+    <script src="/js/app.js"></script>
+    <script src="/js/student.js"></script>
+    <script src="/js/company.js"></script>
+    <script src="/js/tpo.js"></script>
+    <script src="/js/console.js"></script>
+</body>
+</html>
